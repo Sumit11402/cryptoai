@@ -107,6 +107,9 @@ if [ -s "${TEMP_FILE}" ]; then
         cp -rf "${CACHE_DIR}"/crypto-ai-terminal-macos/* "${DEST_DIR}/" 2>/dev/null || true
     fi
     chmod +x "${RUN_BIN}" 2>/dev/null || true
+    if [ "${OS}" = "Darwin" ]; then
+        xattr -d com.apple.quarantine "${RUN_BIN}" 2>/dev/null || true
+    fi
 fi
 
 # 7. Verify executable or fallback to automatic quick-clone & compile
