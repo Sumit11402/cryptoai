@@ -1,0 +1,30 @@
+# Build output
+build/
+bin/
+lib/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Environment & Secrets
+.env
+*.key
+*.pem
+
+# Database & Cache files
+*.db
+*.db-journal
+*.log
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# CMake temporary files
+CMakeUserPresets.json
+.cache/

@@ -1,0 +1,106 @@
+name: Build & Release Free Desktop Binaries (Linux & macOS)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux Native Binary & Tarball
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake git libssl-dev libcurl4-openssl-dev \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libsqlite3-dev
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF
+
+      - name: Compile C++ Binary
+        run: |
+          cmake --build build --config Release -j$(nproc)
+
+      - name: Package Linux Distribution
+        run: |
+          mkdir -p dist/crypto-ai-terminal-linux
+          cp build/crypto_ai_terminal dist/crypto-ai-terminal-linux/
+          cp -r assets dist/crypto-ai-terminal-linux/ 2>/dev/null || true
+          cp -r config dist/crypto-ai-terminal-linux/ 2>/dev/null || true
+          cp .env.example dist/crypto-ai-terminal-linux/.env.example 2>/dev/null || true
+          cp README.md dist/crypto-ai-terminal-linux/
+          cd dist
+          tar -czvf crypto-ai-terminal-linux-x86_64.tar.gz crypto-ai-terminal-linux
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-ai-terminal-linux-x86_64
+          path: dist/crypto-ai-terminal-linux-x86_64.tar.gz
+
+  build-macos:
+    name: Build macOS DMG & Universal Binary
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install macOS Dependencies
+        run: |
+          brew install cmake openssl curl sqlite
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF \
+            -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+
+      - name: Compile C++ Binary
+        run: |
+          cmake --build build --config Release -j$(sysctl -n hw.ncpu)
+
+      - name: Package macOS App Bundle & Zip
+        run: |
+          mkdir -p dist/crypto-ai-terminal-macos
+          cp build/crypto_ai_terminal dist/crypto-ai-terminal-macos/
+          cp -r assets dist/crypto-ai-terminal-macos/ 2>/dev/null || true
+          cp -r config dist/crypto-ai-terminal-macos/ 2>/dev/null || true
+          cp .env.example dist/crypto-ai-terminal-macos/.env.example 2>/dev/null || true
+          cp README.md dist/crypto-ai-terminal-macos/
+          cd dist
+          zip -r crypto-ai-terminal-macos-universal.zip crypto-ai-terminal-macos
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-ai-terminal-macos-universal
+          path: dist/crypto-ai-terminal-macos-universal.zip
+
+  publish-release:
+    name: Publish GitHub Release (Free Distribution)
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            crypto-ai-terminal-linux-x86_64/crypto-ai-terminal-linux-x86_64.tar.gz
+            crypto-ai-terminal-macos-universal/crypto-ai-terminal-macos-universal.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
