@@ -18,6 +18,21 @@
 
 ---
 
+## ⚡ Instant Run (Zero Installation Required)
+
+You can launch the full institutional desktop terminal with **one single command** without cloning or installing dependencies manually:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Sumit11402/cryptoai/main/run.sh | bash
+```
+
+*Or if you have Docker:*
+```bash
+docker run -it --rm --net=host -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix ghcr.io/sumit11402/cryptoai
+```
+
+---
+
 ## 🖥️ Application Architecture & Layout
 
 ```
